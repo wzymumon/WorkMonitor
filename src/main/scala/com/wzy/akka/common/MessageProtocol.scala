@@ -7,7 +7,8 @@ case class RegisterWorkerInfo(id: String, CpuCores: Int, ram: Long)
 
 //  这个是WorkerInfo，是保存在Master的HashMap中的，该HashMap用于管理Worker
 // 将来这个WorkerInfo会扩展，比如增加Worker上一次的心跳时间
-class WorkerInfo(val id: String, val cpu: Int, val ram: Long) {
+@SerialVersionUID(123L)
+class WorkerInfo(val id: String, val cpu: Int, val ram: Long) extends Serializable {
   // 新增属性：心跳时间
   var lastHeartBeatTime: Long = _
 
@@ -32,3 +33,8 @@ case object StartTimeOutWorker
 
 // Master给自己发消息，检测Worker，对于心跳超时的
 case object RemoveTimeOutWorker
+
+// Evaluationzhu
+case object RegisterEvaluation
+// Evaluation获取worker信息
+case object GetMasterActorWorkers

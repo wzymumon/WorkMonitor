@@ -1,7 +1,7 @@
 package com.wzy.akka.master
 
 import akka.actor.{Actor, ActorSystem, Props}
-import com.wzy.akka.common.{HeartBeat, RegisterWorkerInfo, RegisteredWorkerInfo, RemoveTimeOutWorker, StartTimeOutWorker, WorkerInfo}
+import com.wzy.akka.common._
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -21,6 +21,13 @@ class MasterActor extends Actor {
       self ! StartTimeOutWorker
     }
 
+    // 接收到Evaluation 客户端注册的信息，保存进 HashMap
+    case "RegisterEvaluation" => {
+      // 回复客户端注册成功
+      println("Evaluation 绑定成功")
+      sender() ! workers.toMap
+    }
+
     // 接收到Worker 客户端注册的信息，保存进 HashMap
     case RegisterWorkerInfo(id, cpu, ram) => {
       if (!workers.contains(id)) {
@@ -34,31 +41,25 @@ class MasterActor extends Actor {
       }
     }
 
-    // 开启定时器，每隔一定时间检测是否有 Worker 的心跳超时
-    case StartTimeOutWorker => {
-      println("开启了定时检测Worker心跳的任务")
-      import context.dispatcher // 使用调度器时候必须导入dispatcher
-      context.system.scheduler.schedule(0 millis, 9000 millis, self, RemoveTimeOutWorker)
-    }
-
-    // 判断哪些 Worker 心跳超时（nowTime - lastHeartBeatTime），对已经超时的 Worker，将其从 HashMap 中删除掉。
-    case RemoveTimeOutWorker => {
-      // 首先获取所有 Workers 的所有 WorkerInfo
-      val workerInfos = workers.values
-      val nowTime = System.currentTimeMillis()
-      // 过滤出所有超时的 workerInfo 并删除即可
-      workerInfos.filter(workerInfo => (nowTime - workerInfo.lastHeartBeatTime) > 6000)
-        .foreach(workerInfo => workers.remove(workerInfo.id))
-      println("当前有 " + workers.size + " 个Worker存活")
-    }
-
     case HeartBeat(id, cpuUsage, memUsage) => {
       // 更新对应的 Worker 的心跳时间
       val workerInfo = workers(id)
       workerInfo.lastHeartBeatTime = System.currentTimeMillis()
       workerInfo.lastCpuUsage = cpuUsage
       workerInfo.lastMemUsage = memUsage
-      println("Master更新了" + id + " 的心跳时间 ")
+      println("Master更新了" + id + " 的性能检测数据 ")
+      println("当前有 " + workers.size + " 个Worker存活")
+    }
+
+    case "GetMasterActorWorkers" => {
+      // 返回所有worker节点的性能监控信息
+      if (workers.isEmpty){
+        println("当前没有worker节点")
+        sender() ! "workers empty"
+      }else{
+        println("向Evaluation提供监控信息")
+        sender() ! workers.toMap
+      }
     }
   }
 }
@@ -78,6 +79,7 @@ object MasterActorApp {
          |akka.actor.provider="akka.remote.RemoteActorRefProvider"
          |akka.remote.netty.tcp.hostname=$host
          |akka.remote.netty.tcp.port=$port
+         |akka.actor.warn-about-java-serializer-usage=off
       """.stripMargin)
     // 先创建 ActorSystem
     val masterActorSystem = ActorSystem("Master", config)

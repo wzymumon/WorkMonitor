@@ -1,7 +1,7 @@
 package com.wzy.akka.worker
 
 import akka.actor.{Actor, ActorRef, ActorSelection, ActorSystem, Props}
-import com.wzy.akka.common.{HeartBeat, RegisterWorkerInfo, RegisteredWorkerInfo, SendHeartBeat}
+import com.wzy.akka.common.{HeartBeat, RegisterWorkerInfo, RegisteredWorkerInfo, SendHeartBeat, WorkerInfo}
 import com.typesafe.config.ConfigFactory
 import com.wzy.akka.monitor.{CpuUsage, MemUsage}
 
@@ -26,12 +26,15 @@ class WorkerActor(workerName: String, serverHost: String, serverPort: Int, maste
       println("Worker客户端启动运行 向Master发生注册信息")
       val CpuCores: Int = Runtime.getRuntime.availableProcessors()
       val ram = MemUsage.getInstance.getMaxMemory
+      //val ram = 1L
       masterActorProxy ! RegisterWorkerInfo(id, CpuCores, ram)
     }
     case SendHeartBeat => {
       println("WorkedId= " + id + " 向Master发送心跳")
       val cpuUsage: Float = CpuUsage.getInstance.get
       val memUsage: Float = MemUsage.getInstance.get
+      //val cpuUsage: Float = 0.0f
+      //val memUsage: Float = 0.1f
       masterActorProxy ! HeartBeat(id, cpuUsage, memUsage)
     }
     case RegisteredWorkerInfo => {
@@ -46,6 +49,13 @@ class WorkerActor(workerName: String, serverHost: String, serverPort: Int, maste
       //5. SendHeartBeat 消息
       context.system.scheduler.schedule(0 millis, 3000 millis, self, SendHeartBeat)
     }
+    //case workers: Map[String, WorkerInfo] => {
+    //  // 更新Evaluation 的worker情况
+    //  println("更新Evaluation 的worker情况")
+    //  workers.foreach(x => {
+    //    println(s"${x._1} + ${x._2.id} + ${x._2.cpu} + ${x._2.lastCpuUsage} + ${x._2.ram} +  ${x._2.lastMemUsage}")
+    //  })
+    //}
 
   }
 }
@@ -72,6 +82,7 @@ object WorkerActorApp {
          |akka.actor.provider="akka.remote.RemoteActorRefProvider"
          |akka.remote.netty.tcp.hostname=$host
          |akka.remote.netty.tcp.port=$port
+         |akka.actor.warn-about-java-serializer-usage=off
       """.stripMargin)
 
     //创建ActorSystem
