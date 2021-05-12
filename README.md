@@ -1,2 +1,2 @@
 # WorkMonitor
-Spark Worker Node Mnoitor based on
+Spark Worker Node Mnoitor based on Akka
