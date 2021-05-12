@@ -3,15 +3,17 @@ package com.wzy.akka.common
 //使用样例类来构建协议
 
 //Worker注册信息
-case class RegisterWorkerInfo(id: String, cpu: Int, ram: Int)
+case class RegisterWorkerInfo(id: String, CpuCores: Int, ram: Long)
 
 //  这个是WorkerInfo，是保存在Master的HashMap中的，该HashMap用于管理Worker
 // 将来这个WorkerInfo会扩展，比如增加Worker上一次的心跳时间
-class WorkerInfo(val id: String, val cpu: Int, val ram: Int){
+class WorkerInfo(val id: String, val cpu: Int, val ram: Long) {
   // 新增属性：心跳时间
   var lastHeartBeatTime: Long = _
+
   // CPU使用率
   var lastCpuUsage: Float = _
+
   // 内存使用率
   var lastMemUsage: Float = _
 }

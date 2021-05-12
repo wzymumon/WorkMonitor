@@ -7,6 +7,9 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.collection.mutable
 
+/**
+ * 将所有worker节点的性能指标统计到对应节点上
+ */
 class MasterActor extends Actor {
   // 定义一个 mutable.HashMap 属性，用于管理Worker
   val workers: mutable.Map[String, WorkerInfo] = mutable.HashMap[String, WorkerInfo]()
@@ -16,6 +19,19 @@ class MasterActor extends Actor {
       println("Master服务器启动了...")
       // Master 启动定时任务，定时检测注册的 Worker 有哪些没有更新心跳，已经超时的 Worker，将其从 HashMap 中删除掉。
       self ! StartTimeOutWorker
+    }
+
+    // 接收到Worker 客户端注册的信息，保存进 HashMap
+    case RegisterWorkerInfo(id, cpu, ram) => {
+      if (!workers.contains(id)) {
+        // 创建 WorkerInfo
+        val workerInfo: WorkerInfo = new WorkerInfo(id, cpu, ram)
+        // 加入到 HashMap
+        workers += (id -> workerInfo)
+        println("workerInfo" + workerInfo.toString)
+        // 回复客户端注册成功
+        sender() ! RegisteredWorkerInfo
+      }
     }
 
     // 开启定时器，每隔一定时间检测是否有 Worker 的心跳超时
@@ -35,24 +51,9 @@ class MasterActor extends Actor {
         .foreach(workerInfo => workers.remove(workerInfo.id))
       println("当前有 " + workers.size + " 个Worker存活")
     }
-    // 接收到Worker 客户端注册的信息，保存进 HashMap
-    case RegisterWorkerInfo(id, cpu, ram) => {
-      if (!workers.contains(id)) {
-        // 创建 WorkerInfo
-        val workerInfo: WorkerInfo = new WorkerInfo(id, cpu, ram)
-        // 加入到 HashMap
-        workers += (id -> workerInfo)
-        println("服务器的Workers= " + workerInfo.id)
-        println("服务器的Workers= " + workerInfo.cpu)
-        println("服务器的Workers= " + workerInfo.ram)
 
-        // 回复客户端注册成功
-        sender() ! RegisteredWorkerInfo
-      }
-    }
     case HeartBeat(id, cpuUsage, memUsage) => {
       // 更新对应的 Worker 的心跳时间
-      // 1、先从 Worker 中取出 WorkerInfo
       val workerInfo = workers(id)
       workerInfo.lastHeartBeatTime = System.currentTimeMillis()
       workerInfo.lastCpuUsage = cpuUsage

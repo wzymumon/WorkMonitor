@@ -7,12 +7,12 @@ import com.wzy.akka.monitor.{CpuUsage, MemUsage}
 
 import scala.concurrent.duration._
 
-class WorkerActor(serverHost: String, serverPort: Int, masterName: String) extends Actor {
+class WorkerActor(workerName: String, serverHost: String, serverPort: Int, masterName: String) extends Actor {
   //定义一个MasterActorRef
   var masterActorProxy: ActorSelection = _
 
   //定义Worker的编号
-  var id = java.util.UUID.randomUUID().toString
+  var id: String = workerName
 
   //在Actor中有一个方法preStart方法，它会在Actor运行前执行
   //在Akka开发中，通常将初始化的工作，放在preStart方法中
@@ -23,21 +23,20 @@ class WorkerActor(serverHost: String, serverPort: Int, masterName: String) exten
 
   override def receive: Receive = {
     case "start" => {
-      println("Worker客户端启动运行")
-      //给服务器发送一个注册信息
-      masterActorProxy ! RegisterWorkerInfo(id, 16, 16 * 1024)
+      println("Worker客户端启动运行 向Master发生注册信息")
+      val CpuCores: Int = Runtime.getRuntime.availableProcessors()
+      val ram = MemUsage.getInstance.getMaxMemory
+      masterActorProxy ! RegisterWorkerInfo(id, CpuCores, ram)
     }
     case SendHeartBeat => {
-      println("WorkedId= " + id + " 给Master发送心跳")
+      println("WorkedId= " + id + " 向Master发送心跳")
       val cpuUsage: Float = CpuUsage.getInstance.get
       val memUsage: Float = MemUsage.getInstance.get
       masterActorProxy ! HeartBeat(id, cpuUsage, memUsage)
     }
     case RegisteredWorkerInfo => {
-      println("WorkedId=" + id + "注册成功！")
-      println(s"收到 master 回复消息 workerid= $id 注册成功")
-      // 当注册成功后，定义一个，每隔一段时间，发生SendHeartBeat给自己
-      //启动一个定时器.
+      println(s"收到 master 回复消息 workerId= $id 注册成功")
+      // 当注册成功后，定义一个计时器，每隔一段时间，发生SendHeartBeat给自己
       import context.dispatcher
       //说明
       //1.schedule 创建一个定时器
@@ -78,7 +77,7 @@ object WorkerActorApp {
     //创建ActorSystem
     val workerActorSystem = ActorSystem("Worker", config)
     //创建WorkerActor的Actor和ActorRef
-    val workerActorRef: ActorRef = workerActorSystem.actorOf(Props(new WorkerActor(serverHost, serverPort.toInt, masterName)), s"${workerName}")
+    val workerActorRef: ActorRef = workerActorSystem.actorOf(Props(new WorkerActor(workerName, serverHost, serverPort.toInt, masterName)), s"${workerName}")
     //启动客户端
     workerActorRef ! "start"
   }
