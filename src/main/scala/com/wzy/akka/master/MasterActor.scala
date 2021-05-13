@@ -30,15 +30,12 @@ class MasterActor extends Actor {
 
     // 接收到Worker 客户端注册的信息，保存进 HashMap
     case RegisterWorkerInfo(id, cpu, ram) => {
-      if (!workers.contains(id)) {
-        // 创建 WorkerInfo
-        val workerInfo: WorkerInfo = new WorkerInfo(id, cpu, ram)
-        // 加入到 HashMap
-        workers += (id -> workerInfo)
-        println("workerInfo" + workerInfo.toString)
-        // 回复客户端注册成功
-        sender() ! RegisteredWorkerInfo
-      }
+      val workerInfo: WorkerInfo = new WorkerInfo(id, cpu, ram)
+      // 加入到 HashMap
+      workers += (id -> workerInfo)
+      println("workerInfo" + workerInfo.toString)
+      // 回复客户端注册成功
+      sender() ! RegisteredWorkerInfo
     }
 
     case HeartBeat(id, cpuUsage, memUsage) => {
@@ -47,7 +44,7 @@ class MasterActor extends Actor {
       workerInfo.lastHeartBeatTime = System.currentTimeMillis()
       workerInfo.lastCpuUsage = cpuUsage
       workerInfo.lastMemUsage = memUsage
-      println("Master更新了" + id + " 的性能检测数据 ")
+      println("Master更新了" + id + s" 的性能检测数据, cpuUsage: $cpuUsage memUsage $memUsage ")
       println("当前有 " + workers.size + " 个Worker存活")
     }
 

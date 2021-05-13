@@ -6,7 +6,7 @@
 
     <groupId>org.wzy.akka</groupId>
     <!--<artifactId>Master</artifactId>-->
-    <artifactId>Worker</artifactId>
+    <artifactId>Master</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <!--定义一下常量-->
@@ -98,8 +98,8 @@
                                 <!-- 指定main方法 -->
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <!--<mainClass>com.wzy.akka.master.MasterActorApp</mainClass>-->
-                                    <mainClass>com.wzy.akka.worker.WorkerActorApp</mainClass>
+                                    <mainClass>com.wzy.akka.master.MasterActorApp</mainClass>
+                                    <!--<mainClass>com.wzy.akka.worker.WorkerActorApp</mainClass>-->
                                 </transformer>
                             </transformers>
                         </configuration>

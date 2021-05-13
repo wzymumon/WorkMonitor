@@ -17,16 +17,23 @@ class WorkerActor(workerName: String, serverHost: String, serverPort: Int, maste
   //在Actor中有一个方法preStart方法，它会在Actor运行前执行
   //在Akka开发中，通常将初始化的工作，放在preStart方法中
   override def preStart(): Unit = {
-    this.masterActorProxy = context.actorSelection(s"akka.tcp://Master@${serverHost}:${serverPort}/user/${masterName}")
+    this.masterActorProxy = context.actorSelection(s"akka.tcp://Master@$serverHost:$serverPort/user/$masterName")
     println("this.masterActorProxy=" + this.masterActorProxy)
   }
 
   override def receive: Receive = {
     case "start" => {
       println("Worker客户端启动运行 向Master发生注册信息")
-      val CpuCores: Int = Runtime.getRuntime.availableProcessors()
+
+      var CpuCores: Int = 0
+
+      if (workerName == "spark-worker-6"){
+        CpuCores = 1
+      } else {
+        CpuCores = 4
+      }
+
       val ram = MemUsage.getInstance.getMaxMemory
-      //val ram = 1L
       masterActorProxy ! RegisterWorkerInfo(id, CpuCores, ram)
     }
     case SendHeartBeat => {
